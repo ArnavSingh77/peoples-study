@@ -8,7 +8,7 @@ const Timer = () => {
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
-    let interval: number;
+    let interval: NodeJS.Timeout | undefined;
 
     if (isActive) {
       interval = setInterval(() => {
@@ -16,7 +16,9 @@ const Timer = () => {
       }, 1000);
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isActive]);
 
   const toggleTimer = () => setIsActive(!isActive);
