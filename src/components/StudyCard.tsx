@@ -11,7 +11,7 @@ interface StudyCardProps {
 
 const StudyCard = ({ title, participants, duration, onJoin }: StudyCardProps) => {
   return (
-    <Card className="w-full hover:shadow-lg transition-shadow animate-fade-in">
+    <Card className="w-full hover:shadow-lg transition-shadow">
       <CardHeader>
         <CardTitle className="text-xl font-semibold">{title}</CardTitle>
       </CardHeader>
