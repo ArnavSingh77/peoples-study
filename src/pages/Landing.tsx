@@ -1,8 +1,40 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 const Landing = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        navigate("/dashboard");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
+  const handleGetStarted = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      navigate("/dashboard");
+    } else {
+      // If not logged in, redirect to login page
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      
+      if (error) {
+        console.error('Error signing in:', error.message);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-light via-white to-secondary-light">
@@ -15,7 +47,7 @@ const Landing = () => {
           </p>
           <div className="space-x-4">
             <Button 
-              onClick={() => navigate("/dashboard")}
+              onClick={handleGetStarted}
               className="bg-primary hover:bg-primary-dark text-white px-8 py-6 text-lg"
             >
               Get Started
