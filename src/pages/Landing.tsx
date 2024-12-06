@@ -1,10 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -15,25 +24,19 @@ const Landing = () => {
       }
     };
     checkUser();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleGetStarted = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      navigate("/dashboard");
-    } else {
-      // If not logged in, redirect to login page
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`
-        }
-      });
-      
-      if (error) {
-        console.error('Error signing in:', error.message);
-      }
-    }
+  const handleGetStarted = () => {
+    setShowAuth(true);
   };
 
   return (
@@ -55,6 +58,30 @@ const Landing = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={showAuth} onOpenChange={setShowAuth}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center mb-4">Welcome to The Peoples</DialogTitle>
+          </DialogHeader>
+          <Auth
+            supabaseClient={supabase}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: 'rgb(var(--primary))',
+                    brandAccent: 'rgb(var(--primary-dark))',
+                  },
+                },
+              },
+            }}
+            providers={[]}
+            redirectTo={`${window.location.origin}/dashboard`}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
