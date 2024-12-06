@@ -6,12 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [newSession, setNewSession] = useState({
+    title: "",
+    duration: "",
+  });
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     // Check authentication status
@@ -65,6 +79,44 @@ const Dashboard = () => {
     };
   }, [navigate, toast]);
 
+  const handleCreateSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('study_sessions')
+        .insert([
+          { 
+            title: newSession.title,
+            duration: newSession.duration,
+            created_by: user.id
+          }
+        ]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Study session created successfully",
+      });
+      
+      setNewSession({ title: "", duration: "" });
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating session:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create study session",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleJoinSession = async (sessionId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -108,10 +160,44 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Study Dashboard</h1>
-          <Button className="bg-primary hover:bg-primary-dark">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Session
-          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary-dark">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Session
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Study Session</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreateSession} className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Session Title</Label>
+                  <Input
+                    id="title"
+                    value={newSession.title}
+                    onChange={(e) => setNewSession(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter session title"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="duration">Duration</Label>
+                  <Input
+                    id="duration"
+                    value={newSession.duration}
+                    onChange={(e) => setNewSession(prev => ({ ...prev, duration: e.target.value }))}
+                    placeholder="e.g., 2h 30m"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  Create Session
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
